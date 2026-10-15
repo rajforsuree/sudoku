@@ -8,11 +8,6 @@ A full-screen Sudoku game in a single HTML file — no build step, no dependenci
 
 Open `sudoku.html` in a browser. To serve it locally:
 
-```
-python3 -m http.server
-# http://localhost:8000/sudoku.html
-```
-
 ## Features
 
 - Four difficulties: Easy, Medium, Hard, Expert
