@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#2f6df6" />
 <meta name="description" content="A full-screen, modern Sudoku game — four difficulties, notes, hints, timer, statistics, best times, save &amp; resume, light/dark themes. Works offline in one file." />
 <title>Sudoku — Play Online</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232f6df6'/%3E%3Cg fill='%23fff'%3E%3Crect x='6' y='6' width='5' height='5' rx='1.2'/%3E%3Crect x='13.5' y='6' width='5' height='5' rx='1.2' opacity='.45'/%3E%3Crect x='21' y='6' width='5' height='5' rx='1.2'/%3E%3Crect x='6' y='13.5' width='5' height='5' rx='1.2' opacity='.45'/%3E%3Crect x='13.5' y='13.5' width='5' height='5' rx='1.2'/%3E%3Crect x='21' y='13.5' width='5' height='5' rx='1.2' opacity='.45'/%3E%3Crect x='6' y='21' width='5' height='5' rx='1.2'/%3E%3Crect x='13.5' y='21' width='5' height='5' rx='1.2' opacity='.45'/%3E%3Crect x='21' y='21' width='5' height='5' rx='1.2'/%3E%3C/g%3E%3C/svg%3E" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Sudoku — Play Online" />
+<meta property="og:description" content="A full-screen Sudoku game in a single HTML file. Four difficulties, notes, hints, statistics, save &amp; resume, light/dark themes. Works offline." />
+<meta name="twitter:card" content="summary" />
 <style>
 /* ============ theme tokens ============ */
 :root {
@@ -32,6 +37,7 @@
   --accent-2: #7a5cf0;
   --accent-3: #06b6d4;
   --good: #16a34a;
+  --good-bg: rgba(22, 163, 74, 0.20);
   --danger: #e5484d;
   --shadow: 0 16px 40px rgba(26, 42, 84, 0.14);
   --shadow-sm: 0 2px 10px rgba(26, 42, 84, 0.09);
@@ -63,6 +69,7 @@
   --accent-2: #9b7bff;
   --accent-3: #22d3ee;
   --good: #34d399;
+  --good-bg: rgba(52, 211, 153, 0.20);
   --danger: #ff6b6b;
   --shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
   --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
@@ -320,10 +327,14 @@ body {
 .cell.flag { background: var(--flag); }
 .cell.hintcell .value { color: var(--good); }
 
-.cell .value.pop { animation: pop 0.24s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.cell.pop .value { animation: pop 0.24s cubic-bezier(0.2, 1.4, 0.4, 1); }
 @keyframes pop { 0% { transform: scale(0.5); opacity: 0.35; } 65% { transform: scale(1.16); } 100% { transform: scale(1); } }
 .cell.shake { animation: shake 0.32s ease; }
 @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
+.cell.unit { animation: unitFlash 0.85s ease; }
+@keyframes unitFlash { 0% { background: var(--good-bg); } 100% { background: transparent; } }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 .cell .notes {
   position: absolute;
@@ -405,7 +416,7 @@ body {
 .num-btn.done .num-count { color: var(--good); }
 .num-btn.hl { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
 
-.actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .act-btn {
   display: flex;
   align-items: center;
@@ -659,8 +670,8 @@ body {
   .numpad { grid-template-columns: repeat(9, 1fr); gap: 6px; }
   .num-btn { aspect-ratio: 1 / 1.15; font-size: 1.05rem; border-radius: 11px; }
   .num-btn .num-count { right: 4px; bottom: 3px; font-size: 0.52rem; }
-  .actions { grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .act-btn { padding: 11px 6px; font-size: 0.72rem; gap: 5px; flex-direction: column; }
+  .actions { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .act-btn { padding: 11px 6px; font-size: 0.74rem; gap: 6px; }
   .act-btn .ic svg { width: 18px; height: 18px; }
   .board-area { padding: 10px; gap: 8px; }
   .hud { gap: 6px; }
@@ -756,6 +767,7 @@ body {
         <button class="act-btn" id="hintBtn"><span class="ic"></span>Hint</button>
         <button class="act-btn" id="autoBtn"><span class="ic"></span>Auto&nbsp;notes</button>
         <button class="act-btn" id="checkBtn"><span class="ic"></span>Check</button>
+        <button class="act-btn" id="restartBtn"><span class="ic"></span>Restart</button>
         <button class="act-btn" id="pauseBtn"><span class="ic"></span>Pause</button>
       </div>
     </aside>
@@ -824,7 +836,7 @@ body {
   </div>
 </div>
 
-<div class="toasts" id="toasts"></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
 <script>
 /* Sudoku engine — pure logic, no DOM. */
@@ -1002,6 +1014,7 @@ body {
     hint: S('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>'),
     auto: S('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16v5"/><path d="M16.5 18.5h5"/>'),
     check: S('<path d="M20 6 9 17l-5-5"/>'),
+    restart: S('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'),
     pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.4"/><rect x="14" y="5" width="4" height="14" rx="1.4"/></svg>',
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m7 4 13 8-13 8V4Z"/></svg>',
     soundOn: S('<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.6 5.4a9 9 0 0 1 0 13.2"/>'),
@@ -1167,7 +1180,8 @@ body {
 
   function paintIcons() {
     [["undoBtn", "undo"], ["redoBtn", "redo"], ["eraseBtn", "erase"], ["notesBtn", "notes"],
-     ["hintBtn", "hint"], ["autoBtn", "auto"], ["checkBtn", "check"]].forEach(function (pair) {
+     ["hintBtn", "hint"], ["autoBtn", "auto"], ["checkBtn", "check"],
+     ["restartBtn", "restart"]].forEach(function (pair) {
       const b = $(pair[0]); if (b) b.querySelector(".ic").innerHTML = ICONS[pair[1]];
     });
     $("statsBtn").innerHTML = ICONS.stats;
@@ -1228,6 +1242,8 @@ body {
         else if (conflicts[r][c]) el.classList.add("conflict");
 
         ref.value.textContent = v !== 0 ? String(v) : "";
+        el.setAttribute("aria-label", "Row " + (r + 1) + ", column " + (c + 1) + ", " +
+          (v === 0 ? "empty" : (state.given[r][c] ? "given " : "") + v));
 
         const noteSet = state.notes[r][c];
         if (v === 0 && noteSet.size > 0) {
@@ -1261,6 +1277,7 @@ body {
     if (settings.limit > 0) mistakesEl.textContent += "/" + settings.limit;
     hintCountEl.textContent = String(state.hints);
     notesBtn.classList.toggle("active", state.notesMode);
+    notesBtn.setAttribute("aria-pressed", String(state.notesMode));
     $("undoBtn").disabled = history.undo.length === 0;
     $("redoBtn").disabled = history.redo.length === 0;
   }
@@ -1271,15 +1288,32 @@ body {
     setTimeout(() => el.classList.remove(cls), ms || 340);
   }
 
+  /* green sweep when a row, column or box is completed correctly */
+  function flashUnits(r, c) {
+    const sol = state.solution;
+    const full = (unit) => unit.every(p => state.grid[p[0]][p[1]] === sol[p[0]][p[1]]);
+    const row = [], col = [], box = [];
+    for (let i = 0; i < 9; i++) { row.push([r, i]); col.push([i, c]); }
+    const br = r - (r % 3), bc = c - (c % 3);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) box.push([br + i, bc + j]);
+    [row, col, box].forEach(unit => {
+      if (full(unit)) unit.forEach(p => flash(p[0], p[1], "unit", 900));
+    });
+  }
+
   /* ---------------- history ---------------- */
-  const snap = (r, c) => ({ r: r, c: c, value: state.grid[r][c], notes: new Set(state.notes[r][c]) });
+  const snap = (r, c) => ({ r: r, c: c, value: state.grid[r][c], notes: new Set(state.notes[r][c]), given: state.given[r][c] });
   function record(cells) {
     history.undo.push(cells);
     if (history.undo.length > 300) history.undo.shift();
     history.redo.length = 0;
   }
   function applyCells(cells) {
-    cells.forEach(s => { state.grid[s.r][s.c] = s.value; state.notes[s.r][s.c] = new Set(s.notes); });
+    cells.forEach(s => {
+      state.grid[s.r][s.c] = s.value;
+      state.notes[s.r][s.c] = new Set(s.notes);
+      if (typeof s.given === "boolean") state.given[s.r][s.c] = s.given;
+    });
   }
   function undo() {
     if (state.solved || state.paused || state.over) return;
@@ -1312,6 +1346,8 @@ body {
     if (state.given[r][c]) return;
     record([snap(r, c)]);
 
+    let anim = null;   // "pop" | "shake" | null
+
     if (state.notesMode) {
       if (state.grid[r][c] !== 0) { state.grid[r][c] = 0; state.notes[r][c] = new Set(); }
       if (state.notes[r][c].has(v)) state.notes[r][c].delete(v);
@@ -1325,16 +1361,23 @@ body {
       state.notes[r][c] = new Set();
       if (v !== state.solution[r][c]) {
         state.mistakes++;
-        flash(r, c, "shake");
+        anim = "shake";
         sfxError();
-        if (settings.limit > 0 && state.mistakes >= settings.limit) { render(); saveGame(); return gameOver(); }
       } else {
         if (settings.autoNotes) clearPeerNotes(r, c, v);
-        flash(r, c, "pop");
+        anim = "pop";
         sfxPlace();
       }
     }
-    render(); saveGame(); checkWin();
+
+    render();
+    // animations must be applied AFTER render(), which resets every cell's classes
+    if (anim === "shake") flash(r, c, "shake");
+    else if (anim === "pop") { flash(r, c, "pop"); flashUnits(r, c); }
+
+    saveGame();
+    if (anim === "shake" && settings.limit > 0 && state.mistakes >= settings.limit) return gameOver();
+    checkWin();
   }
 
   function clearPeerNotes(r, c, v) {
@@ -1371,7 +1414,7 @@ body {
     state.given[target.r][target.c] = true;
     state.hints++;
     state.selected = { r: target.r, c: target.c };
-    render(); saveGame(); flash(target.r, target.c, "pop"); sfxPlace();
+    render(); saveGame(); flash(target.r, target.c, "pop"); flashUnits(target.r, target.c); sfxPlace();
     checkWin();
   }
 
@@ -1404,6 +1447,22 @@ body {
     bad.forEach(([r, c]) => flash(r, c, "flag", 1600));
     toast(bad.length + " incorrect cell" + (bad.length === 1 ? "" : "s"), "bad");
     sfxError();
+  }
+
+  /* replay the same puzzle from scratch */
+  function restart() {
+    if (state.paused) resume();
+    hideOverlay(); boardEl.classList.remove("blurred");
+    pauseBtn.querySelector(".ic").innerHTML = ICONS.pause;
+    state.grid = state.puzzle.map(r => r.slice());
+    state.given = state.puzzle.map(r => r.map(v => v !== 0));
+    state.notes = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => new Set()));
+    state.selected = null; state.notesMode = false;
+    state.mistakes = 0; state.hints = 0; state.seconds = 0;
+    state.solved = false; state.paused = false; state.over = false; state.revealed = false;
+    history.undo.length = 0; history.redo.length = 0;
+    render(); fitBoard(); saveGame(); startTimer();
+    toast("Puzzle restarted");
   }
 
   /* ---------------- win / lose ---------------- */
@@ -1680,6 +1739,7 @@ body {
     $("hintBtn").addEventListener("click", hint);
     $("autoBtn").addEventListener("click", autoNotes);
     $("checkBtn").addEventListener("click", check);
+    $("restartBtn").addEventListener("click", restart);
     pauseBtn.addEventListener("click", togglePause);
     themeBtn.addEventListener("click", toggleTheme);
     fullBtn.addEventListener("click", toggleFull);
